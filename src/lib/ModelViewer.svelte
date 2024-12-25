@@ -1,24 +1,17 @@
 <script lang="ts">
   import "@google/model-viewer";
-  import { Button, ButtonSet, Popover, Tab, TabContent, Tabs } from "carbon-components-svelte";
-  import Play from "carbon-icons-svelte/lib/Play.svelte";
+  import { Button, ButtonSet } from "carbon-components-svelte";
   import Download from "carbon-icons-svelte/lib/Download.svelte";
   import Rotate from "carbon-icons-svelte/lib/Rotate.svelte";
-  import { ExpandableTile } from "carbon-components-svelte";
-  import { Accordion, AccordionItem } from "carbon-components-svelte";
-  import Catalog from "carbon-icons-svelte/lib/Catalog.svelte";
-  import { onMount } from "svelte";
   import ChevronRight from "carbon-icons-svelte/lib/ChevronRight.svelte";
   import ChevronLeft from "carbon-icons-svelte/lib/ChevronLeft.svelte";
   import DymForm from "./DymForm.svelte";
 
-  import { manifoldWorker } from "./stores";
 
   let viewer: HTMLElement;
   export let style = "";
 
-  // export let glbURL = "";
-  // export let threeMFURL = "";
+
 
   let autoRotate = false;
   export let logs = [] as string[];
@@ -35,19 +28,6 @@
 
   $: modelList = Object.keys(models).map((key) => models[key]);
 
-  let innerManifoldWorker = null;
-  manifoldWorker.subscribe((value) => {
-    innerManifoldWorker = value;
-  });
-
-
-
-
-
-  onMount(() => {
-    
-
-  });
 
   function download3mf() {
     const a = document.createElement("a");
@@ -107,46 +87,7 @@
       icon={!isSideNavOpen ? ChevronRight : ChevronLeft}
     />
 
-      
-
-
-    <!-- <div style="display:flex;flex-direction: column;flex:1;"> -->
-      <!-- <div
-        style="position: relative; display:flex; 
-        flex-direction: row-reverse;
-        pointer-events: none;
-        width: 100%; height:0rem; top: 0rem; left: 0rem; z-index: 1000; float: right;"
-      >
-      <Accordion style="pointer-events: auto;"  size="sm">
-        <AccordionItem title="Log" style="background-color: #262626;">
-            {#each logs as log}
-              <p>{log}</p>
-            {/each}
-        </AccordionItem>
-      </Accordion>  
-      
-      </div> -->
-
-      <!-- <model-viewer
-        style="height: 100%;width: 100%;"
-        {...{
-          "auto-rotate": autoRotate ? true : undefined,
-        }}
-        auto-rotate-delay={1}
-        interaction-prompt="none"
-        src={glbURL}
-        camera-controls
-        bind:this={viewer}
-      ></model-viewer> -->
-    <!-- </div> -->
-
     <div style="height: 100%;width: 100%;display:flex;flex-direction:column;">
-      <!-- <Tabs style="width: 100%;" bind:selected={selected} >
-        {#each modelList as model, index (model.name)}
-          <Tab label={model.name} ></Tab>
-        {/each}
-      </Tabs> -->
-
       <ButtonSet>
         {#each modelList as model, key (model.name)}
           <Button style="pointer-events: auto;width: 100%;"
@@ -177,20 +118,10 @@
           bind:this={viewer}
         ></model-viewer>
       {:else if models[selected].type === '2d'}
-        <!-- <img style="width: 100%;flex:1;" src={models[selected]?.data || ""} /> -->
-        <!-- {JSON.stringify(models[selected])} -->
-
-        <!-- using background to fit img -->
         <div style="width: 100%;flex:1;background-image: url({models[selected]?.data || ""});background-size: contain;background-repeat: no-repeat;background-position: center;"></div>
-
       {/if}
 
-      
-
     </div>
- 
-
-   
   </div>
 
 
