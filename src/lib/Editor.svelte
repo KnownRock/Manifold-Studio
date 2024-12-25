@@ -66,18 +66,20 @@
   }
 
   async function getManifoldDTS() {
-    const global = await fetch("/manifold-global-types.d.ts").then((response) =>
-      response.text(),
-    );
+    // const global = await fetch("/manifold-global-types.d.ts").then((response) =>
+    //   response.text(),
+    // );
+    const global = await import("../../public/manifold-global-types.d.ts?raw");
 
-    const encapsulated = await fetch("/manifold-encapsulated-types.d.ts").then(
-      (response) => response.text(),
-    );
+    // const encapsulated = await fetch("/manifold-encapsulated-types.d.ts").then(
+    //   (response) => response.text(),
+    // );
+    const encapsulated = await import("../../public/manifold-encapsulated-types.d.ts?raw");
 
     return `
       declare namespace ManifoldNamespace {
-        ${global.replaceAll("export", "")}
-        ${encapsulated.replace(/^import.*$/gm, "").replaceAll("export", "").replaceAll("declare", "")}
+        ${global.default.replaceAll("export", "")}
+        ${encapsulated.default.replace(/^import.*$/gm, "").replaceAll("export", "").replaceAll("declare", "")}
       }
       `;
   }
