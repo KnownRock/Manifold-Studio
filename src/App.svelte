@@ -21,10 +21,6 @@
   let manifoldInitialized = false;
 
   function finishRun() {
-    // disableCancel();
-    // const log = consoleElement.textContent;
-    // // Remove "Running..."
-    // consoleElement.textContent = log.substring(log.indexOf('\n') + 1);
     logs = tempLogs;
     tempLogs = [];
   }
@@ -34,11 +30,8 @@
     workerLoaded = resolve;
   });
 
-  let d = null;
-
   let models = {};
 
-  d = value;
   manifoldWorker.onerror = function (e) {
     console.error(e);
     finishRun();
@@ -76,12 +69,10 @@
     }
 
     finishRun();
-    // runButton.disabled = true;
   };
 
   async function runCode(event) {
     await workerLoadedProms;
-    // console.log(event.detail.value)
 
     Object.keys(models).forEach((key) => {
       const model = models[key];
@@ -106,7 +97,6 @@
 
     manifoldWorker.postMessage({
       type: "run",
-      // (event.detail.value)
       jsUrl,
     });
   }
@@ -128,16 +118,6 @@
   <svelte:fragment slot="skip-to-content">
     <SkipToContent />
   </svelte:fragment>
-  <!-- <HeaderNav>
-    <HeaderNavItem href="/" text="Link 1" />
-    <HeaderNavItem href="/" text="Link 2" />
-    <HeaderNavItem href="/" text="Link 3" />
-    <HeaderNavMenu text="Menu">
-      <HeaderNavItem href="/" text="Link 1" />
-      <HeaderNavItem href="/" text="Link 2" />
-      <HeaderNavItem href="/" text="Link 3" />
-    </HeaderNavMenu>
-  </HeaderNav> -->
 </Header>
 
 <Content style="flex:1; padding: 0;display:flex;flex-direction:row;">
@@ -162,18 +142,6 @@
     {logs}
     {models}
   />
-
-  <!-- <Editor style="height: 100%;width:50%;" />
-  <Button style="height: 100%;width:50%;" 
-    on:click={() => {
-      // debugger
-      manifoldWorker.postMessage(`
-      const {cube, sphere} = Manifold;
-      const result = cube(1, 1, 1);
-
-      `);
-    }}
-  >run</Button> -->
 </Content>
 
 <style>
