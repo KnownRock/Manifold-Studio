@@ -1,0 +1,22 @@
+https://maker.js.org/playground/?script=dogbone-polygon
+a form to edit model like this
+
+in code may like this 
+```
+const path = getPath(
+  // no need? '[{"x":0,"y":0},{"x":0,"y":10},{"x":10,"y":10},{"x":10,"y":0}]',
+  {
+    'field1': {
+      type: 'number',
+      value: 10
+    },
+    'field2': {
+      type: 'number',
+      value: 10
+    }
+  },
+
+  processFunction
+  
+)
+```
