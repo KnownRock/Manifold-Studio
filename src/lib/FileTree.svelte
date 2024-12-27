@@ -5,7 +5,7 @@
   let nodes = [];
 
   import VmdkDisk from "carbon-icons-svelte/lib/VmdkDisk.svelte";
-
+  import InformationSquareFilled from "carbon-icons-svelte/lib/InformationSquareFilled.svelte";
   // add icon
   import Add from "carbon-icons-svelte/lib/Add.svelte";
   import TrashCan from "carbon-icons-svelte/lib/TrashCan.svelte";
@@ -13,27 +13,64 @@
   import Close from "carbon-icons-svelte/lib/Close.svelte";
 
   import { onMount } from "svelte";
-
-  import { createEventDispatcher } from "svelte";
-  import { getSetting } from "./stores";
-  import { getAll, hasItem, removeItem, setItem } from "./localFs";
-
-  const dispatch = createEventDispatcher();
+  import UpdateNow from "carbon-icons-svelte/lib/UpdateNow.svelte";
+  import { getAll, hasItem, removeItem, setItem , currentFile, fsChanged, getFileName, getItem } from "./localFs";
+  import { addNotification, writeSetting } from "./stores";
+    import { add } from "@techstark/opencv-js";
+    import { text } from "svelte/internal";
 
   let treeOffset = 0;
 
+  let fileIndex = {} as Record<string, any>;
+
   async function freshenLocalFileDrivers() {
     const files = await getAll()
+
+    function getIcon(file){
+      if(file.type === 'driver'){
+        return VmdkDisk;
+      }
+      // if(getFileName(file.name) === '__index__'){
+      //   return InformationSquareFilled
+      // }
+
+      return null;
+    }
+
+
+    
+    const indexFiles = files.filter((file) => getFileName(file.name) === '__index__');
+    const tempFileIndex = {}
+    for(const indexFile of indexFiles){
+      if(indexFile.type === 'driver'){
+        continue;
+      }
+
+      const driverName = indexFile.driver;
+      const indexFileContent = await getItem(indexFile.name);
+      const driverIndex = JSON.parse(indexFileContent as string);
+
+      for(const key in driverIndex){
+        const fileName = driverIndex[key];
+        tempFileIndex[`${driverName}:${key}`] = fileName;
+      }
+    }
+
+    fileIndex = tempFileIndex;
+
+
 
     nodes = files.map((file) => {
       return {
         id: file.name,
         text: file.type === 'driver' ? file.name : file.name.split(":")[1],
         type: file.type,
-        icon: file.type === 'driver' ? VmdkDisk : null,
+        icon: getIcon(file),
         pid: file.type === 'file' ? file.driver : null
       };
-    });
+    })
+
+
 
   }
 
@@ -47,13 +84,16 @@
 
     freshenLocalFileDrivers();
 
-    
-    setTimeout(() => {
-      treeview?.expandNodes((node) => node.id === "Local");
-      const select = getSetting("currentFile");
-      selectedIds = select ? [select] : [];
-    }, 1000);
 
+  });
+
+  currentFile.subscribe((val) => {
+    selectedIds = val ? [val] : [];
+    activeId = val;
+  });
+
+  fsChanged.subscribe(() => {
+    freshenLocalFileDrivers();
   });
 
 
@@ -66,40 +106,30 @@
 
   let treeview = null;
 
-  function setNodeProps(node, props) {
-    const index = nodes.findIndex((n) => n.id === node.id);
-    nodes[index] = {
-      ...nodes[index],
-      ...props,
-    };
-
-    nodes = [...nodes];
-  }
-
-  let tempNodeName = "new";
-  let tempNodeDriver = "Local";
-
-
+  // TODO: convert to real type
+  let tempNodeName = "new" as string | number;
+  let tempNodeDriver = "Local" as string | number;
 
   function handleNodeSelect(nodeId) {
     const selectedNode = nodes.find((node) => node.id === nodeId);
-    dispatch("select", selectedNode);
+    currentFile.set(selectedNode.id);
   }
 
-
-  $: selectedIds.length == 1 && handleNodeSelect(selectedIds[0]);
-
-
 </script>
-
 
 <TreeView
   bind:this={treeview}
   id="file-tree"
-  size="compact"
   style="overflow: visible; max-height: {treeHeight}"
   labelText="File Tree"
   nodes={toHierarchy(nodes, node=>node.pid)}
+  expandedIds={nodes.map(node => node.id)}
+  on:select={({ detail }) => {
+    if(!detail){
+      return
+    }
+    handleNodeSelect(detail.id);
+  }}
   bind:activeId
   bind:selectedIds
   on:select={({ detail }) => console.log("select", detail)}
@@ -107,12 +137,9 @@
   on:focus={({ detail }) => console.log("focus", detail)}
 >
   <div slot="default"
- 
-  let:node 
-  style="
-    width: 100%; display: flex; align-items: center; overflow: visible;
-    justify-content: space-between;  flex:1;
-  ">
+    let:node 
+    style="width: 100%; display: flex; align-items: center; overflow: visible;justify-content: space-between;  flex:1;"
+  >
     {#if isNameEditingDict[node.id]}
       <TextInput
         size="sm"
@@ -126,26 +153,32 @@
           if (e.key === "Enter") {
             e.stopPropagation();
 
-            // debugger
-  
-            
-            if (nodes.find((n) => n.id === tempNodeName)) {
-              return;
-            }
 
             if(await hasItem(`${tempNodeDriver}:${tempNodeName}`)){
-              console.log("File already exists");
+              // console.log("File already exists");
+              addNotification({
+                title: "File Already Exists",
+                subtitle: `${tempNodeName} already exists.`,
+                kind: "error",
+              });
+
               return;
             }
 
             isNameEditingDict[node.id] = false;
             await setItem(`${tempNodeDriver}:${tempNodeName}`, "");
 
+            addNotification({
+              title: "File Created",
+              subtitle: `${tempNodeName} has been created.`,
+              kind: "success",
+            });
 
+            
+
+            await freshenLocalFileDrivers();
 
             handleNodeSelect(tempNodeDriver + ':' + tempNodeName);
-
-            freshenLocalFileDrivers();
 
             
           }
@@ -154,11 +187,16 @@
     {/if}
 
     {#if !isNameEditingDict[node.id]}
-      <div style="margin-left: 1rem; width:100%;">{node.text}</div>
+      <div style="margin-left: 1rem; width:100%;cursor:pointer;">
+        <!-- {node.text} -->
+         {fileIndex[node.id]?.name || node.text}
+      </div>
     {/if}
 
-    <ButtonSet style="position: relative; display: flex; flex-direction: row; "  on:click={(e)=>e.stopPropagation()}>
-
+    <ButtonSet style="position: relative; display: flex; flex-direction: row; "  
+      on:click={(e)=>e.stopPropagation()}
+      on:mouseover={(e)=>e.stopPropagation()}
+    >
       {#if nodeTypeDict[node.id] === 'driver'}
         <Button
           size="small"
@@ -194,7 +232,20 @@
 
       {#if nodeTypeDict[node.id] === 'file'}
 
-        {#if !isDeletingDict[node.id]}
+        {#if fileIndex[node.id]?.installUrl}
+          <Button
+            size="small"
+            kind="tertiary"
+            iconDescription="Update"
+            style="width: 2rem;"
+            on:click={() => {
+              writeSetting("install", (fileIndex[node.id].installUrl));
+            }}
+            icon={UpdateNow} 
+          />
+        {/if}
+
+        {#if !isDeletingDict[node.id] && node.text !== '__index__'}
           <Button
             size="small"
             kind="danger-tertiary"
@@ -214,14 +265,15 @@
             iconDescription="Confirm Delete"
             style="width: 2rem;"
             on:click={() => {
-              // console.log("Delete clicked");
-
-              const driverName = (node.id).split(":")[0];
-
+              // FIXME: using uuid for new item
+              const driverName = (node.id + '').split(":")[0];
               removeItem(`${driverName}:${node.text}`);
-              
-
               freshenLocalFileDrivers();
+              addNotification({
+                title: "File Deleted",
+                subtitle: `${node.text} has been deleted.`,
+                kind: "error",
+              });
 
             }}
             icon={Checkmark}

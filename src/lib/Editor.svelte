@@ -7,7 +7,7 @@
   // emit event to parent component
   import { createEventDispatcher } from "svelte";
 
-  import {getSetting, writeSetting} from "./stores";
+  import {addNotification, getSetting, writeSetting} from "./stores";
 
   const dispatch = createEventDispatcher();
 
@@ -32,7 +32,7 @@
   import { onMount } from "svelte";
   import FileTree from "./FileTree.svelte";
   import Save from "carbon-icons-svelte/lib/Save.svelte";
-  import { getItem } from "./localFs";
+  import { currentFile, fsChanged, getFileName, getItem, getPathType, hasItem, setItem, updateIndex } from "./localFs";
 
   let editor: monaco.editor.IStandaloneCodeEditor;
   let container: HTMLDivElement;
@@ -119,6 +119,7 @@
         viewer: {
           render: (manifold: ManifoldNamespace.Manifold | String | OffscreenCanvas, name = 'main') => Promise<void>;
           clear: () => void;
+          notify: (data: { title: string; subtitle: string; kind: 'success' | 'error' | 'info' | 'warning'; timeout?: number }) => void;
         }
       } & {
        form : {
@@ -188,7 +189,7 @@
  
   });
 
-  let currentFile = "";
+  // let currentFile = "";
 
   let autoRun = true;
 
@@ -199,18 +200,18 @@
   // let nowMarkers = [];
 
   // https://stackoverflow.com/questions/43463344/getting-errors-from-monaco-editor
-  monaco.editor.onDidChangeMarkers(([uri]) => {
-    const model = monaco.editor.getModel(uri);
-    if (model) {
-      const markers = monaco.editor.getModelMarkers({ resource: uri });
-      // console.log(markers);
+  // monaco.editor.onDidChangeMarkers(([uri]) => {
+  //   const model = monaco.editor.getModel(uri);
+  //   if (model) {
+  //     const markers = monaco.editor.getModelMarkers({ resource: uri });
+  //     // console.log(markers);
 
-      // nowMarkers = markers;
-      if(markers.filter((marker) => marker.severity === 8).length === 0) {
-        checkCodeRun();
-      }
-    }
-  });
+  //     // nowMarkers = markers;
+  //     if(markers.filter((marker) => marker.severity === 8).length === 0) {
+  //       checkCodeRun();
+  //     }
+  //   }
+  // });
 
 
 
@@ -220,66 +221,77 @@
   });
 
   function checkCodeRun() {
-    // getting error from editor
-
-    // const markers = nowMarkers.filter((marker) => marker.severity === 8);
-    // if (markers.length > 0) {
-    //   const error = markers[0];
-    //   console.log(error);
-    //   return;
-    // }
-
     const value = editor.getValue();
-
-    if (value === "") {
-      return;
-    }
-
     dispatch("run", { value });
   }
 
+  let innerCurrentFile = null;
+  currentFile.subscribe(async (val) => {
+    console.log(val);
 
-  // temporary
-  async function loadFile(fileNameRaw) {
-    currentFile = fileNameRaw;
-
-    // read url params overriden url fetch and load
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    const orUrl = params.get("overrideUrl");
-
-    if (orUrl) {
-      const response = await fetch(orUrl);
-      const text = await response.text();
-      editor.setValue(text);
+    if(val === innerCurrentFile){
       return;
     }
 
-    getItem(fileNameRaw).then((value) => {
-      if (!value) {
-        return;
+    innerCurrentFile = val;
+
+    if(hasItem(val) && getPathType(val) === "file"){
+      const fileName = getFileName(val);
+
+      if(fileName === '__index__'){
+        // change mode to json
+        await editorInited;
+        monaco.editor.setModelLanguage(editor.getModel(), "json");
+
+      }else{
+        // change mode to typescript
+        await editorInited;
+        monaco.editor.setModelLanguage(editor.getModel(), "typescript");
       }
-      editor.setValue(value);
-    });
 
-  
+      enableEditor();
+      loadFile(val);
+    }else{
+      disableEditor();
+      clearEditor();
+    }
+  });
 
-    writeSetting("currentFile", fileNameRaw);
+
+  fsChanged.subscribe(async () => {
+    loadFile(innerCurrentFile);
+  });
+
+
+  async function loadFile(fileNameRaw) {
+    const value = await getItem(fileNameRaw)
+    await editorInited;
+    editor.setValue(value as string || "");
   }
 
   async function saveFile(fileNameRaw) {
-    const driverName = fileNameRaw.split(":")[0];
-    const fileName = fileNameRaw.split(":")[1];
+    await setItem(fileNameRaw, editor.getValue());
+    await updateIndex(fileNameRaw);
 
-    const driver = localforage.createInstance({
-      name: driverName,
+    addNotification({
+      title: "File Saved",
+      kind: "success",
     });
-
-    driver.setItem(fileName, editor.getValue());
   }
 
-  function clearEditor() {
+  async function clearEditor() {
+    await editorInited;
     editor.setValue("");
+  }
+
+  async function disableEditor() {
+    await editorInited;
+    editor.updateOptions({ readOnly: true });
+  }
+
+  async function enableEditor() {
+    await editorInited;
+    editor.updateOptions({ readOnly: false });
   }
 
 </script>
@@ -288,21 +300,8 @@
   
 
   <div style="height: 100%;display:flex; overflow: hidden;">
-    <div style="height: 100%;width: 30%; overflow: visible;">
-      <FileTree
-        on:select={ (e) => {
-          if(!e || !e.detail){
-            return
-          }
-
-          if(e.detail.type === "file"){ 
-            loadFile(e.detail.id);
-          } else {
-            clearEditor();
-          }
-
-        }}
-      ></FileTree>
+    <div style="height: 100%;width: 40%; overflow: visible;">
+      <FileTree></FileTree>
     </div>
     
     <div bind:this={container} style="height: 100%;width: 100%;"></div>
@@ -332,7 +331,8 @@
     <!-- save -->
     <Button 
       style="pointer-events: auto;"
-      on:click={() => saveFile(currentFile)}
+      disabled={!hasItem(innerCurrentFile) || getPathType(innerCurrentFile) !== "file"}
+      on:click={() => saveFile(innerCurrentFile)}
       kind="primary" iconDescription="Save" tooltipPosition="top" icon={Save} />
   </div>
 

@@ -92,11 +92,16 @@ const viewer = {
     self.postMessage({
       type: 'clear'
     });
+  },
+  async notify(message: {
+    [key: string]: any
+  }){
+    self.postMessage({
+      type: 'notify',
+      data: message
+    });
   }
 }
-
-// import { type FormSettings} from './lib/FormComponentDict';
-
 
 
 let formListener: (data: any) => void; 
@@ -154,10 +159,9 @@ self.onmessage = async (e) => {
   if(e.data.type === 'run'){
     cleanup();
 
+    viewer.clear();
+
     const jsUrl = e.data.jsUrl;
-
-    // self.postMessage({type: 'clear'})
-
 
     const fn = await import(jsUrl);
 
@@ -168,6 +172,14 @@ self.onmessage = async (e) => {
       cv,
       viewer,
       form
+    });
+
+
+    viewer.notify({
+      kind: 'success',
+      title: 'Success running script',
+      subtitle: 'The script has been run successfully',
+      timeout: 1000
     });
 
   }

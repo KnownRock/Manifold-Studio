@@ -5,13 +5,19 @@
   import ChevronLeft from "carbon-icons-svelte/lib/ChevronLeft.svelte";
   import ChevronRight from "carbon-icons-svelte/lib/ChevronRight.svelte";
 
-  import { Button } from "carbon-components-svelte";
+  import { Button, Modal } from "carbon-components-svelte";
   import ts from "typescript";
-  import { getSetting, manifoldWorker } from "./lib/stores";
+  import { addNotification, getSetting, manifoldWorker, settings, writeSetting } from "./lib/stores";
 
   import { Header, SkipToContent, Content } from "carbon-components-svelte";
+  import InstallConfirm from "./lib/Installer.svelte";
+  import Installer from "./lib/Installer.svelte";
+  import { ts2js } from "./lib/lang";
+  import Notification from "./lib/Notification.svelte";
 
   let isSideNavOpen = getSetting("editor") === "open";
+
+  let open = true;
 
   console.log(isSideNavOpen);
 
@@ -68,8 +74,14 @@
       models = {};
     }
 
+    if (e.data.type === "notify") {
+      addNotification(e.data.data);
+    }
+
     finishRun();
   };
+
+
 
   async function runCode(event) {
     await workerLoadedProms;
@@ -83,15 +95,7 @@
     });
     models = {};
 
-    const code = await ts.transpile(event.detail.value, {
-      module: ts.ModuleKind.ESNext,
-      target: ts.ScriptTarget.ESNext,
-      // add source map
-      sourceMap: true,
-      inlineSourceMap: true,
-      inlineSources: true,
-    });
-
+    const code = await ts2js(event.detail.value);
     const blob = new Blob([code], { type: "application/javascript" });
     const jsUrl = URL.createObjectURL(blob);
 
@@ -101,18 +105,30 @@
     });
   }
 
+
+  settings.subscribe((val) => {
+    const { editor } = val;
+    if (editor === "open") {
+      isSideNavOpen = true;
+    } else {
+      isSideNavOpen = false;
+    }
+  });
+
+  function handleSideNavOpen() {
+    isSideNavOpen = !isSideNavOpen;
+    writeSetting("editor", isSideNavOpen ? "open" : "closed");
+  }
+
+
   $: editorStyle = `
     height: 100%;
-    width: ${isSideNavOpen ? "calc(50% - 2rem)" : "0%"};
+    width: ${isSideNavOpen ? "40%" : "0%"};
   `;
 
-  // set query params for editor side
-  $: {
-    const url = new URL(window.location.href);
-    url.searchParams.set("editor", isSideNavOpen ? "open" : "closed");
-    window.history.replaceState({}, "", url);
-  }
 </script>
+
+<Installer />
 
 <Header company="Manifold" platformName="Studio">
   <svelte:fragment slot="skip-to-content">
@@ -130,9 +146,7 @@
       size="small"
       tooltipPosition="right"
       iconDescription="Toggle Editor"
-      on:click={() => {
-        isSideNavOpen = !isSideNavOpen;
-      }}
+      on:click={handleSideNavOpen}
       icon={!isSideNavOpen ? ChevronRight : ChevronLeft}
     />
   </div>
@@ -143,6 +157,9 @@
     {models}
   />
 </Content>
+
+
+<Notification/>
 
 <style>
 </style>

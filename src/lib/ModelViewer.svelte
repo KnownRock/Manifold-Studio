@@ -6,6 +6,7 @@
   import ChevronRight from "carbon-icons-svelte/lib/ChevronRight.svelte";
   import ChevronLeft from "carbon-icons-svelte/lib/ChevronLeft.svelte";
   import DymForm from "./DymForm.svelte";
+  import { settings, writeSetting } from "./stores";
 
 
   let viewer: HTMLElement;
@@ -24,28 +25,49 @@
       glbURL: string;
       threeMFURL: string;
     }
-  }
+  } | {
+    [key: string]: {
+      name: string;
+      type: '2d'
+      data: string;
+    }
+  };
 
   $: modelList = Object.keys(models).map((key) => models[key]);
 
 
   function download3mf() {
+    const model = models[selected];
+    if (!model || model.type !== '3d') {
+      return;
+    }
+
     const a = document.createElement("a");
-    a.href = models[selected]?.threeMFURL;
+    a.href = model.threeMFURL;
     a.download = `${selected}.3mf`;
     a.click();
   }
 
   function downloadGlb() {
+    const model = models[selected];
+    if (!model || model.type !== '3d') {
+      return;
+    }
+
     const a = document.createElement("a");
-    a.href = models[selected]?.glbURL;
+    a.href = model.glbURL;
     a.download = `${selected}.glb`;
     a.click();
   }
 
   function downloadImage() {
+    const model = models[selected];
+    if (!model || model.type !== '2d') {
+      return;
+    }
+
     const a = document.createElement("a");
-    a.href = models[selected]?.data;
+    a.href = model.data;
     a.download = `${selected}.png`;
     a.click();
   }
@@ -55,16 +77,52 @@
     showLogs = !showLogs;
   }
 
-  const query = new URLSearchParams(window.location.search);
-  let isSideNavOpen = query.get("form") === "open";
+  let isSideNavOpen = false;
+  settings.subscribe((val) => {
+    const { form } = val;
+    if (form === 'open'){
+      isSideNavOpen = true;
+    }else{
+      isSideNavOpen = false;
+    }
+  });
+
+  function handleSideNavOpen(){
+    isSideNavOpen = !isSideNavOpen;
+    writeSetting("form", isSideNavOpen ? 'open' : 'closed');
+  }
+
+  function getGlbUrl(selected: string) {
+    const model = models[selected];
+    if (!model || model.type !== '3d') {
+      return '';
+    }
+
+    return model.glbURL;
+  }
+
+  function getThreeMFUrl(selected: string) {
+    const model = models[selected];
+    if (!model || model.type !== '3d') {
+      return '';
+    }
+
+    return model.threeMFURL;
+  }
+
+  function getImageViewerUrl(selected: string) {
+    const model = models[selected];
+    if (!model || model.type !== '2d') {
+      return '';
+    }
+
+    return model.data;
+  }
+
+  
 
   $: formStyle = `height: 100%;width: ${isSideNavOpen ? "30%" : "0%"}; overflow: hidden;`;
 
-  $: {
-    const url = new URL(window.location.href);
-    url.searchParams.set("form", isSideNavOpen ? "open" : "closed");
-    window.history.replaceState({}, "", url);
-  }
 
 </script>
 
@@ -81,9 +139,7 @@
       size="small"
       tooltipPosition="right"
       iconDescription="Toggle Form"
-      on:click={() => {
-        isSideNavOpen = !isSideNavOpen;
-      }}
+      on:click={handleSideNavOpen}
       icon={!isSideNavOpen ? ChevronRight : ChevronLeft}
     />
 
@@ -113,12 +169,12 @@
           }}
           auto-rotate-delay={1}
           interaction-prompt="none"
-          src={models[selected]?.glbURL || ""}
+          src={getGlbUrl(selected)}
           camera-controls
           bind:this={viewer}
         ></model-viewer>
       {:else if models[selected].type === '2d'}
-        <div style="width: 100%;flex:1;background-image: url({models[selected]?.data || ""});background-size: contain;background-repeat: no-repeat;background-position: center;"></div>
+        <div style="width: 100%;flex:1;background-image: url({getImageViewerUrl(selected)});background-size: contain;background-repeat: no-repeat;background-position: center;"></div>
       {/if}
 
     </div>
@@ -150,7 +206,7 @@
           iconDescription="Download glb"
           tooltipPosition="top"
           icon={Download}
-          disabled={!models[selected]?.glbURL}
+          disabled={!getGlbUrl(selected)}
           on:click={downloadGlb}
         >
           glb
@@ -163,7 +219,7 @@
           iconDescription="Download 3MF"
           tooltipPosition="top"
           icon={Download}
-          disabled={!models[selected]?.threeMFURL}
+          disabled={!getThreeMFUrl(selected)}
           on:click={download3mf}
         >
           3MF
@@ -178,7 +234,7 @@
           iconDescription="Download Image"
           tooltipPosition="top"
           icon={Download}
-          disabled={!models[selected]?.data}
+          disabled={!getImageViewerUrl(selected)}
           on:click={downloadImage}
         >
           Image

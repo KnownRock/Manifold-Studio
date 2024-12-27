@@ -1,7 +1,10 @@
 import localforage from "localforage";
+import { get, writable } from "svelte/store";
 
 const defaultDrivers = [{
   name: 'Local'
+},{
+  name: 'App'
 }]
 
 const drivers = defaultDrivers.map(driver => {
@@ -83,4 +86,72 @@ export async function hasItem(fileName: string) {
   }
   const keys = await driver.driver.keys()
   return keys.includes(key)
+}
+
+export function getPathType(path: string) {
+  return path.includes(':') ? 'file' : 'driver'
+}
+
+export function getFileName(path: string) {
+  return path.split(':').pop()
+}
+
+export function getDriverName(path: string) {
+  return path.split(':').shift()
+}
+
+
+import { writeSetting, getSetting } from "./stores";
+import { ts2js, ts2Module } from "./lang";
+
+export const currentFile = writable(getSetting('currentFile') || null);
+
+currentFile.subscribe(async (value) => {
+  writeSetting('currentFile', value);
+})
+
+
+let fsChangedId = 0;
+export const fsChanged = writable(fsChangedId);
+
+export async function updateFs() {
+  fsChanged.set(++fsChangedId);
+}
+
+export async function updateIndex(fileNameRaw) {
+  const fileName = getFileName(fileNameRaw);
+  const driverName = getDriverName(fileNameRaw);
+
+  if (!fileName) {
+    return;
+  }
+
+  if(fileName === '__index__'){
+    updateFs();
+    return
+  }
+
+  const text = await getItem(fileNameRaw);
+
+  if (!text) {
+    return;
+  }
+
+  // load module
+  const module = await ts2Module(text as string);
+
+  const oldIndex = JSON.parse((await getItem(driverName + ':__index__')) as string || '{}');
+
+
+
+  const newIndex = {
+    ...oldIndex,
+    [module?.meta?.id]: module?.meta
+  }
+
+  // update index
+  await setItem(driverName + ':__index__', JSON.stringify(newIndex, null, 2)); 
+
+  await updateFs();
+
 }
