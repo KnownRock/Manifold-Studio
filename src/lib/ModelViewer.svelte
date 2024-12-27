@@ -135,7 +135,7 @@
     </div>
 
     <Button style="height: 100%;width:2rem;"
-      kind="ghost"
+      kind="tertiary"
       size="small"
       tooltipPosition="right"
       iconDescription="Toggle Form"
@@ -144,9 +144,9 @@
     />
 
     <div style="height: 100%;width: 100%;display:flex;flex-direction:column;">
-      <ButtonSet>
+      <ButtonSet style="width: 100%; overflow: auto;">
         {#each modelList as model, key (model.name)}
-          <Button style="pointer-events: auto;width: 100%;"
+          <Button style="pointer-events: auto;width: 100%;  width: 6rem;"
             size="small"
             kind={selected === model.name ? "primary" : "ghost"}
             on:click={() => {

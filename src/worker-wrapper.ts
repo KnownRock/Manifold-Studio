@@ -160,6 +160,7 @@ self.onmessage = async (e) => {
     cleanup();
 
     viewer.clear();
+    form.set([])
 
     const jsUrl = e.data.jsUrl;
 

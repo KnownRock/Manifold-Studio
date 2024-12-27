@@ -16,8 +16,6 @@
   import UpdateNow from "carbon-icons-svelte/lib/UpdateNow.svelte";
   import { getAll, hasItem, removeItem, setItem , currentFile, fsChanged, getFileName, getItem } from "./localFs";
   import { addNotification, writeSetting } from "./stores";
-    import { add } from "@techstark/opencv-js";
-    import { text } from "svelte/internal";
 
   let treeOffset = 0;
 
@@ -66,9 +64,19 @@
         text: file.type === 'driver' ? file.name : file.name.split(":")[1],
         type: file.type,
         icon: getIcon(file),
-        pid: file.type === 'file' ? file.driver : null
+        pid: file.type === 'file' ? (file.driver + ':__index__') : null
       };
-    })
+    }).filter((node) => {
+      return node.text !== '__index__';
+    }).map((node) => {
+      if(node.type === 'driver'){
+        node.id = node.id + ':__index__';
+        node.type = 'file';
+        return node;
+      }else{
+        return node;
+      }
+    });
 
 
 
@@ -187,8 +195,7 @@
     {/if}
 
     {#if !isNameEditingDict[node.id]}
-      <div style="margin-left: 1rem; width:100%;cursor:pointer;">
-        <!-- {node.text} -->
+      <div style="margin-left: 1rem; width:10rem;cursor:pointer;overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
          {fileIndex[node.id]?.name || node.text}
       </div>
     {/if}

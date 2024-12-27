@@ -270,6 +270,7 @@
   }
 
   async function saveFile(fileNameRaw) {
+
     await setItem(fileNameRaw, editor.getValue());
     await updateIndex(fileNameRaw);
 

@@ -146,7 +146,7 @@ export async function updateIndex(fileNameRaw) {
 
   const newIndex = {
     ...oldIndex,
-    [module?.meta?.id]: module?.meta
+    [fileName]: module?.meta
   }
 
   // update index

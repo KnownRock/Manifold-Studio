@@ -123,7 +123,7 @@
 
   $: editorStyle = `
     height: 100%;
-    width: ${isSideNavOpen ? "40%" : "0%"};
+    width: ${isSideNavOpen ? "50%" : "0%"};
   `;
 
 </script>
@@ -136,13 +136,13 @@
   </svelte:fragment>
 </Header>
 
-<Content style="flex:1; padding: 0;display:flex;flex-direction:row;">
+<Content style="flex:1; padding: 0;display:flex;flex-direction:row; width: 100vw;">
   <Editor style={editorStyle} on:run={runCode} />
 
   <div style="width:2rem;overflow:visible;z-index:999">
     <Button
       style="height: 100%;width:100%;"
-      kind="ghost"
+      kind="tertiary"
       size="small"
       tooltipPosition="right"
       iconDescription="Toggle Editor"

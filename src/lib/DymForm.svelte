@@ -62,6 +62,15 @@
   }
 </script>
 
-<form on:submit={handleSubmit} bind:this={form}>
-  <DymFormItem children={setting} {handleValueChange}></DymFormItem>
+<form on:submit={handleSubmit} bind:this={form} style="height: 100%; display: flex; flex-direction: column;">
+  {#if setting.length === 0}
+    <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
+      <h3>
+        No form setting provided
+      </h3>
+    </div>
+  {:else}
+    <DymFormItem children={setting} {handleValueChange}></DymFormItem>
+  {/if}
+
 </form>

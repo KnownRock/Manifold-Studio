@@ -7,6 +7,8 @@
   import { ts2js, ts2Module } from "./lang";
   import { getItem, setItem, updateFs } from "./localFs";
 
+  import {sha256} from "js-sha256";
+
   let installUrl = "";
 
   settings.subscribe((val) => {
@@ -33,26 +35,35 @@
       localStorage.setItem("whitelist", JSON.stringify(whitelistObj));
     }
 
-    // install the app
+    // get installUrl hash
+    const hashStr = sha256(installUrl);
 
     // clear the install setting
     writeSetting("install", "");
 
     const text = await fetch(installUrl).then((res) => res.text());
 
-    const additonalExport = `
-    meta.installUrl = meta.installUrl || "${installUrl}";
-    `;
+    const module = await ts2Module(text);
 
-    const newCode = text + additonalExport;
+    let newCode = text
+    if(!module.meta){
+      newCode += ';\nexport const meta = {} as {[key: string]: any};\n';
+    }
+    if(!module?.meta?.installUrl){
+      newCode += `;\nmeta.installUrl = "${installUrl}";\n`;
+    }
+    if(!module?.meta?.name){
+      newCode += `;\nmeta.name = "${hashStr.slice(0, 8)}";\n`;
+    }
 
-    const module = await ts2Module(newCode);
+    const newModule = await ts2Module(newCode);
 
-    await setItem('App:' + module.meta.id, text);
 
+    // TODO: refactor
+    await setItem('App:' + hashStr, newCode);
     await setItem('App:__index__', JSON.stringify({
       ...JSON.parse((await getItem('App:__index__')) as string),
-      [module.meta.id]: module.meta
+      [hashStr]: newModule.meta
     }, null, 2)); 
 
 
