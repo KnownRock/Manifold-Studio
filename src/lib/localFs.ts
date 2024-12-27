@@ -140,7 +140,14 @@ export async function updateIndex(fileNameRaw) {
   // load module
   const module = await ts2Module(text as string);
 
-  const oldIndex = JSON.parse((await getItem(driverName + ':__index__')) as string || '{}');
+  // const oldIndex = JSON.parse((await getItem(driverName + ':__index__')) as string || '{}');
+  let oldIndex = {};
+  try {
+    oldIndex = JSON.parse((await getItem(driverName + ':__index__')) as string || '{}');
+  } catch (e) {
+    console.error(e);
+  }
+  
 
 
 

@@ -14,7 +14,7 @@
 
   import { onMount } from "svelte";
   import UpdateNow from "carbon-icons-svelte/lib/UpdateNow.svelte";
-  import { getAll, hasItem, removeItem, setItem , currentFile, fsChanged, getFileName, getItem } from "./localFs";
+  import { getAll, hasItem, removeItem, setItem , currentFile, fsChanged, getFileName, getItem, getDriverName } from "./localFs";
   import { addNotification, writeSetting } from "./stores";
 
   let treeOffset = 0;
@@ -46,7 +46,17 @@
 
       const driverName = indexFile.driver;
       const indexFileContent = await getItem(indexFile.name);
-      const driverIndex = JSON.parse(indexFileContent as string);
+      // const driverIndex = JSON.parse(indexFileContent as string);
+      let driverIndex = {};
+      try{
+        driverIndex = JSON.parse(indexFileContent as string);
+      }catch(e){
+        addNotification({
+          title: "Error Parsing Index",
+          subtitle: `Error parsing index file ${indexFile.name}.`,
+          kind: "error",
+        });
+      }
 
       for(const key in driverIndex){
         const fileName = driverIndex[key];
@@ -204,7 +214,7 @@
       on:click={(e)=>e.stopPropagation()}
       on:mouseover={(e)=>e.stopPropagation()}
     >
-      {#if nodeTypeDict[node.id] === 'driver'}
+      {#if getFileName(node.id) === '__index__'}
         <Button
           size="small"
           kind="ghost"
@@ -218,7 +228,8 @@
             };
 
             tempNodeName = "new";
-            tempNodeDriver = node.id;
+            // tempNodeDriver = node.id;
+            tempNodeDriver = getDriverName(node.id);
 
             nodes = [...nodes, newNode];
 
@@ -237,7 +248,7 @@
 
 
 
-      {#if nodeTypeDict[node.id] === 'file'}
+      {#if nodeTypeDict[node.id] === 'file' && getFileName(node.id) !== '__index__'}
 
         {#if fileIndex[node.id]?.installUrl}
           <Button

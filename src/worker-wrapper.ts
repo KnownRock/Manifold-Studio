@@ -168,20 +168,37 @@ self.onmessage = async (e) => {
 
     jsUrl && URL.revokeObjectURL(jsUrl);
 
-    await fn.default({
-      ...context,
-      cv,
-      viewer,
-      form
-    });
+    try {
+      
+      await fn.default({
+        ...context,
+        cv,
+        viewer,
+        form
+      });
+
+      
+      // viewer.notify({
+      //   kind: 'success',
+      //   title: 'Success running script',
+      //   subtitle: 'The script has been run successfully',
+      //   timeout: 1000
+      // });
+
+    } catch (e) {
+
+      viewer.notify({
+        kind: 'error',
+        title: 'Error running script',
+        subtitle: e.message,
+        timeout: 3000
+      });
+      
+    } finally {
+      
+    }
 
 
-    viewer.notify({
-      kind: 'success',
-      title: 'Success running script',
-      subtitle: 'The script has been run successfully',
-      timeout: 1000
-    });
 
   }
 

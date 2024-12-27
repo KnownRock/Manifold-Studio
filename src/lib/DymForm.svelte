@@ -62,7 +62,7 @@
   }
 </script>
 
-<form on:submit={handleSubmit} bind:this={form} style="height: 100%; display: flex; flex-direction: column;">
+<form on:submit={handleSubmit} bind:this={form} style="height: 100%; ">
   {#if setting.length === 0}
     <div style="height: 100%; display: flex; justify-content: center; align-items: center;">
       <h3>

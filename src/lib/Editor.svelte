@@ -119,7 +119,13 @@
         viewer: {
           render: (manifold: ManifoldNamespace.Manifold | String | OffscreenCanvas, name = 'main') => Promise<void>;
           clear: () => void;
-          notify: (data: { title: string; subtitle: string; kind: 'success' | 'error' | 'info' | 'warning'; timeout?: number }) => void;
+          notify: (data: { 
+            title?: string; 
+            subtitle?: string; 
+            kind?: 'success' | 'error' | 'info' | 'warning'; 
+            timeout?: number;
+            [key: string]: any;
+          }) => void;
         }
       } & {
        form : {
