@@ -79,6 +79,10 @@ export async function getItem(fileName: string) {
 }
 
 export async function hasItem(fileName: string) {
+  if(!fileName){
+    return false
+  }
+
   const [driverName, key] = fileName.split(':')
   const driver = drivers.find(driver => driver.name === driverName)
   if (!driver) {
@@ -89,6 +93,10 @@ export async function hasItem(fileName: string) {
 }
 
 export function getPathType(path: string) {
+  if (!path) {
+    return null
+  }
+
   return path.includes(':') ? 'file' : 'driver'
 }
 
