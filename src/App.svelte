@@ -14,6 +14,7 @@
   import Installer from "./lib/Installer.svelte";
   import { ts2js } from "./lib/lang";
   import Notification from "./lib/Notification.svelte";
+  import FileTree from "./lib/FileTree.svelte";
 
   let isSideNavOpen = getSetting("editor") === "open";
 
@@ -123,7 +124,8 @@
 
   $: editorStyle = `
     height: 100%;
-    width: ${isSideNavOpen ? "50%" : "0%"};
+    overflow: hidden;
+    width: ${isSideNavOpen ? "30%" : "0%"};
   `;
 
 </script>
@@ -137,12 +139,17 @@
 </Header>
 
 <Content style="flex:1; padding: 0;display:flex;flex-direction:row; width: 100vw;">
+
+  <div style="height: 100%;width: 20rem; ">
+    <FileTree></FileTree>
+  </div>
+
   <Editor style={editorStyle} on:run={runCode} />
 
   <div style="width:2rem;overflow:visible;z-index:999">
     <Button
       style="height: 100%;width:100%;"
-      kind="tertiary"
+      kind="ghost"
       size="small"
       tooltipPosition="right"
       iconDescription="Toggle Editor"

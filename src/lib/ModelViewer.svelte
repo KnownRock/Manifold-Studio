@@ -153,7 +153,7 @@
     </div>
 
     <Button style="height: 100%;width:2rem;"
-      kind="tertiary"
+      kind="ghost"
       size="small"
       tooltipPosition="right"
       iconDescription="Toggle Form"
