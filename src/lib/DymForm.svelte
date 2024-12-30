@@ -1,5 +1,6 @@
 <script lang="ts">
   import DymFormItem from "./DymFormItem.svelte";
+  import { currentFile } from "./localFs";
 
   import { manifoldWorker } from "./stores";
 
@@ -8,6 +9,11 @@
   let setting = [];
 
   $: console.log(form);
+
+  currentFile.subscribe((val) => {
+    setting = []
+  });
+
 
   manifoldWorker.addEventListener("message", (e) => {
     if (!e || !e.data) {
