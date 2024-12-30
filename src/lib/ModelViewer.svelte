@@ -35,6 +35,9 @@
 
   $: modelList = Object.keys(models).map((key) => models[key]);
 
+  // if give a empty string, model-viewer will not render after next
+  const loadingGlb = '/loading.glb';
+
 
   function download3mf() {
     const model = models[selected];
@@ -95,7 +98,7 @@
   function getGlbUrl(selected: string) {
     const model = models[selected];
     if (!model || model.type !== '3d') {
-      return '';
+      return loadingGlb;
     }
 
     return model.glbURL;
@@ -123,7 +126,22 @@
 
   $: formStyle = `height: 100%;width: ${isSideNavOpen ? "30%" : "0%"}; overflow: hidden;`;
 
+  $: modelViewerStyle = `width: 100%; height:100%;flex:1; ${models[selected]?.type === '3d' ? 'display: block;' : 'display: none;'}`;
+  // $: modelViewerStyle = `width: 100%; height:100%;flex:1; `;
 
+
+  // $: modelViewerSrc = getGlbUrl(selected);
+
+  let modelViewerSrc = getGlbUrl(selected);
+  async function handleSelectedChange(name: string) {
+    selected = name;
+    modelViewerSrc = getGlbUrl(selected);
+  }
+
+  // watch models change
+  $: models && (modelViewerSrc = getGlbUrl(selected));
+
+  
 </script>
 
 <div {style}>
@@ -150,7 +168,8 @@
             size="small"
             kind={selected === model.name ? "primary" : "ghost"}
             on:click={() => {
-              selected = model.name;
+              // selected = model.name;
+              handleSelectedChange(model.name);
             }}
           >
             {model.name}
@@ -159,20 +178,22 @@
         {/each}
       </ButtonSet>
 
+      <!-- in order to keep camera -->
+      <model-viewer
+        style={modelViewerStyle}
+        {...{
+          "auto-rotate": autoRotate ? true : undefined,
+        }}
+        auto-rotate-delay={1}
+        interaction-prompt="none"
+        src={modelViewerSrc}
+        camera-controls
+        bind:this={viewer}
+      ></model-viewer>
+
+
       {#if !models[selected]}
         No model selected
-      {:else if models[selected].type === '3d'}
-        <model-viewer
-          style="width: 100%;flex:1;"
-          {...{
-            "auto-rotate": autoRotate ? true : undefined,
-          }}
-          auto-rotate-delay={1}
-          interaction-prompt="none"
-          src={getGlbUrl(selected)}
-          camera-controls
-          bind:this={viewer}
-        ></model-viewer>
       {:else if models[selected].type === '2d'}
         <div style="width: 100%;flex:1;background-image: url({getImageViewerUrl(selected)});background-size: contain;background-repeat: no-repeat;background-position: center;"></div>
       {/if}
