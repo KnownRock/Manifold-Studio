@@ -184,7 +184,9 @@
             }
 
             isNameEditingDict[node.id] = false;
-            await setItem(`${tempNodeDriver}:${tempNodeName}`, "");
+
+
+            await setItem(`${tempNodeDriver}:${tempNodeName}`, (await import('./example.ts?raw')).default);
 
             addNotification({
               title: "File Created",
