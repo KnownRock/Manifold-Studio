@@ -20,3 +20,8 @@ const path = getPath(
   
 )
 ```
+
+
+fix manifold types
+
+image anti-aliasing
