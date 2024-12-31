@@ -17,6 +17,8 @@ import {cleanup, getManifoldRuningContext} from './worker';
 import cv from "@techstark/opencv-js"
 import type { Manifold } from '../public/manifold-encapsulated-types';
 
+import getHelper from './lib/runtime-helper';
+
 const GLOBAL_DEFAULTS = {
   roughness: 0.2,
   metallic: 1,
@@ -55,7 +57,7 @@ self.postMessage({
 const context = getManifoldRuningContext();
 
 const viewer = {
-  async render(d: Manifold | String | OffscreenCanvas, name = 'main', options: typeof GLOBAL_DEFAULTS = GLOBAL_DEFAULTS) {
+  async render(d: Manifold | String | OffscreenCanvas | cv.Mat, name = 'main', options: typeof GLOBAL_DEFAULTS = GLOBAL_DEFAULTS) {
     if(d instanceof (context.module.Manifold as any)){
       const output = await context.exportModels(options , d as Manifold);
       self.postMessage({
@@ -86,7 +88,27 @@ const viewer = {
           data: dataURL,
         }
       });
+    } else if(d instanceof cv.Mat){
+      const debugSrc = d.clone()
+      const channelCount = debugSrc.channels();
+      if(channelCount === 1){
+        cv.cvtColor(debugSrc, debugSrc, cv.COLOR_GRAY2RGBA, 0);
+      }
+      
+      const canvasForDebug = new OffscreenCanvas(debugSrc.cols, debugSrc.rows);
+      const ctxForDebug = canvasForDebug.getContext('2d');
+      const imgDataForDebug = new ImageData(new Uint8ClampedArray(debugSrc.data), debugSrc.cols, debugSrc.rows);
+      
+      if(!ctxForDebug){
+        throw new Error('ctxForDebug is null')
+      }
+      ctxForDebug.putImageData(imgDataForDebug, 0, 0);
+      viewer.render(canvasForDebug, name)
+      debugSrc.delete()
+    } else {
+      throw new Error('Unsupported render type')
     }
+
   },
   async clear(){
     self.postMessage({
@@ -172,6 +194,7 @@ self.onmessage = async (e) => {
       
       await fn.default({
         ...context,
+        helper: getHelper(context),
         cv,
         viewer,
         form

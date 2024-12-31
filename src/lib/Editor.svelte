@@ -104,41 +104,7 @@
     );
 
     monaco.languages.typescript.typescriptDefaults.addExtraLib(
-      `
-
-      type FormSettings = {
-          [key: string]: any;
-          cType: "Form" | "FormGroup" | "Checkbox" | "RadioButtonGroup" | "RadioButton" | "Select" | "SelectItem" | "Button" | "FileUploader";
-          children?: FormSettings[];
-      }
-
-
-      declare type FunctionParsType = typeof ManifoldNamespace & {
-        cv: typeof cv;
-      } & {
-        viewer: {
-          render: (manifold: ManifoldNamespace.Manifold | String | OffscreenCanvas, name = 'main') => Promise<void>;
-          clear: () => void;
-          notify: (data: { 
-            title?: string; 
-            subtitle?: string; 
-            kind?: 'success' | 'error' | 'info' | 'warning'; 
-            timeout?: number;
-            [key: string]: any;
-          }) => void;
-        }
-      } & {
-       form : {
-        set : (formSettings: FormSettings[]) => void;
-        on: (event: 'submit' | 'change', callback: (data: any) => void) => void;
-        getValue : () => {
-          [key: string]: any;
-        }
-      }
-    }
-
-        
-      `,
+      (await import ('./editor.additions.d.ts?raw')).default
     );
 
     // monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
