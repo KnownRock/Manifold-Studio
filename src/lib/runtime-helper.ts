@@ -1,3 +1,6 @@
+import cv from '@techstark/opencv-js'
+
+
 export default function getHelper({
   CrossSection,
   cv
@@ -54,9 +57,9 @@ export default function getHelper({
 
     return shapes
   }
-  function getCrossSectionFromShape(shape) {
+  function getCrossSectionFromShape(shape, simplify=0.001) {
     let poly = CrossSection.ofPolygons([shape.points.reverse()])
-    poly = poly.simplify(0.05)
+    poly = poly.simplify(simplify)
     for (const hole of shape.holes) {
       poly = poly.subtract(CrossSection.ofPolygons(hole))
     }
@@ -64,18 +67,19 @@ export default function getHelper({
     return poly
   }
 
-  function getCrossSectionFromShapes(shapes) {
+  function getCrossSectionFromShapes(shapes, simplify=0.001) {
     if (shapes.length === 0) {
       return CrossSection.ofPolygons([])
     }
 
-    const polys = shapes.map(shape => getCrossSectionFromShape(shape))
+    const polys = shapes.map(shape => getCrossSectionFromShape(shape, simplify))
     const poly = polys.reduce((acc, cur) => acc.add(cur))
     return poly
   }
 
 
-  function imageDataToCrossSection(imageData: ImageData, threshold=128, sizeOfPerPix=1) {
+  function imageDataToCrossSection(imageData: ImageData, threshold=128, sizeOfPerPix=1, simplifyRaw=-1){
+    const simplify = simplifyRaw < 0 ? sizeOfPerPix / 100 : simplifyRaw
     // assume imageData is RGBA
     const src = cv.matFromArray(imageData.height, imageData.width, cv.CV_8UC4, imageData.data);
 
@@ -87,7 +91,8 @@ export default function getHelper({
 
     cv.findContours(src, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
 
-    const poly = getCrossSectionFromShapes(getShapesFromCntAndHierarchy(contours, hierarchy, sizeOfPerPix))
+    const shapes = getShapesFromCntAndHierarchy(contours, hierarchy, sizeOfPerPix)
+    const poly = getCrossSectionFromShapes(shapes, simplify)
 
     src.delete()
     contours.delete()
